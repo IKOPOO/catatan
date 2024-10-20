@@ -1,6 +1,8 @@
 use std::{
-    cell::{RefCell, RefMut},
+    cell::{Ref, RefCell},
+    fs::File,
     io,
+    num::ParseIntError,
     rc::{Rc, Weak},
 };
 
@@ -12,7 +14,7 @@ struct Folder {
 
 // struct untuk file
 #[derive(Debug)]
-struct File {
+struct Filee {
     name: String,
     // size: usize,
 }
@@ -21,7 +23,7 @@ struct File {
 #[derive(Debug)]
 enum FilesystemEntry {
     Folder(Folder),
-    File(File),
+    File(Filee),
 }
 
 // struct untuk membuat node tree
@@ -33,7 +35,7 @@ struct TreeNode {
 }
 
 impl TreeNode {
-    // membuat node tree baru
+    // fungsi ini hanya untuk membuat node root/folder root
     fn new_folder(name: String) -> Rc<RefCell<TreeNode>> {
         let folder = Folder { name };
         Rc::new(RefCell::new(TreeNode {
@@ -43,40 +45,45 @@ impl TreeNode {
         }))
     }
 
-    // fungsi menambahkan anak dan membuat folder atau file
-    fn add_child(parent: &Rc<RefCell<TreeNode>>, name: String, what: String) {
+    // fungsi untuk membuat sebuah folder baru
+    fn create_folder(parent: &Rc<RefCell<TreeNode>>, name: String) {
+        let new_folder = Folder { name };
+        let new_node = Rc::new(RefCell::new(TreeNode {
+            entry: FilesystemEntry::Folder(new_folder),
+            child: Some(Vec::new()),
+            parent: Some(Rc::downgrade(parent)),
+        }));
+
         let mut parent_borrow = parent.borrow_mut();
-        if what == "folder" {
-            if let FilesystemEntry::Folder(_) = parent.borrow().entry {
-                let new_folder = Folder { name };
-                let new_node = Rc::new(RefCell::new(TreeNode {
-                    entry: FilesystemEntry::Folder(new_folder),
-                    child: Some(Vec::new()),
-                    parent: Some(Rc::downgrade(parent)),
-                }));
-                
-                if let Some(ref mut children) = parent_borrow.child{
-                    children.push(new_node);
-                }
+        if let Some(ref mut children) = parent_borrow.child {
+            children.push(new_node);
+        }
+    }
+
+    // fungsi untuk membuat sebuah file baru
+    fn create_file(parent: &Rc<RefCell<TreeNode>>, name: String) {
+        let new_file = Filee { name };
+        let new_leaf = Rc::new(RefCell::new(TreeNode {
+            entry: FilesystemEntry::File(new_file),
+            child: None,
+            parent: Some(Rc::downgrade(parent)),
+        }));
+
+        let mut parent_borrow = parent.borrow_mut();
+        if let Some(ref mut children) = parent_borrow.child {
+            children.push(new_leaf);
+        }
+    }
+    // fungsi menambahkan anak
+    fn add_child(parent: &Rc<RefCell<TreeNode>>, name: String, what: String) {
+        match what.as_str() {
+            "folder" => {
+                TreeNode::create_folder(parent, name);
             }
-        } else if what == "file" {
-            if let FilesystemEntry::Folder(_) = parent.borrow().entry {
-                let new_file = File { name };
-                let new_leaf = Rc::new(RefCell::new(TreeNode {
-                    entry: FilesystemEntry::File(new_file),
-                    child: None,
-                    parent: Some(Rc::downgrade(parent)),
-                }));
-                
-                if let Some(ref mut childre ) = parent_borrow.child{
-                    childre.push(new_leaf);
-                }
-                
-            } else {
-                println!("blok file ra iso nduwe children anjg tol kontol!!!");
+            "file" => {
+                TreeNode::create_file(parent, name);
             }
-        } else {
-            println!("pilihane ra ono blok, kei reti aku cok ben iso jalan")
+            _ => println!("error blog"),
         }
     }
 }
@@ -145,7 +152,7 @@ fn main() {
                     }
                 }
                 _ => println!("kontols"),
-            }   
+            }
         }
 
         _ => println!("goblok su aku capek anjg rust memek"),
