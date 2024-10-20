@@ -1,8 +1,6 @@
 use std::{
-    cell::{Ref, RefCell},
-    fs::File,
+    cell::RefCell,
     io,
-    num::ParseIntError,
     rc::{Rc, Weak},
 };
 
@@ -75,7 +73,11 @@ impl TreeNode {
         }
     }
     // fungsi menambahkan anak
-    fn add_child(parent: &Rc<RefCell<TreeNode>>, name: String, what: String) {
+    fn add_child(parent: &Rc<RefCell<TreeNode>>, what: String) {
+        let mut input = String::new();
+        println!("Masukkan nama {}",what);
+        io::stdin().read_line(&mut input).expect("cannot read line");
+        let name = input.trim().to_string();
         match what.as_str() {
             "folder" => {
                 TreeNode::create_folder(parent, name);
@@ -126,11 +128,15 @@ fn main() {
             println!("Buat Catatan \nLihat catatan\n");
             single();
             println!("input : ");
+
+            // user input 
             let mut input = String::new();
             io::stdin()
                 .read_line(&mut input)
                 .expect("ra ono cok jo gendeng o koe su");
             let user_input = input.trim();
+
+            // matching user input to pick proses
             match user_input {
                 "buat" => {
                     println!("Folder \nFile ");
@@ -141,11 +147,7 @@ fn main() {
                     let user_input = input.trim();
                     match user_input {
                         "folder" => {
-                            println!("nama folder : ");
-                            let mut nama = String::new();
-                            io::stdin().read_line(&mut nama).expect("i love you");
-                            let kond = String::from("folder");
-                            TreeNode::add_child(&root, nama, kond);
+                            TreeNode::add_child(&root, "folder".to_string());
                         }
 
                         _ => println!("kontrakan"),
